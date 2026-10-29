@@ -4,14 +4,24 @@ A Chrome extension (Manifest V3) that tracks your Claude.ai usage with:
 
 - **In-composer strip** — a small pill embedded inside the chat composer (just under the project chip), showing session %, reset time, and messages-left when known.
 - **Toolbar popup** — Session (5-hour) + Weekly card auto-labelled with whichever Claude model you're actively using. Clicking the toolbar icon immediately fetches fresh data.
+- **Second account in incognito / private windows** (v1.5.4): an incognito window signed in to a different Claude account now shows that account's limits, not the normal window's. Usage is stored per account; see "Several accounts" below. Based on a community PR.
+- **No Share prompts** (v1.5.3): the Share button that appeared in the strip after rating, and the Share card, are gone. Sharing lives in the gear menu ("Share my usage card") and the toolbar popup.
 - **Free-plan first-message hint** (v1.5.2): Free accounts only get usage from Claude's replies, so before the first message a small card at the Usage segment says "Send your first message". Shown once (`free_hint_done`); the popup's Free-plan text now says the same instead of "Claude no longer shares usage data". Weekly stays hidden on Free until a reply reports it.
-- **Fewer pop-up cards** (v1.5.2): at most one card a week; the rating card is asked at most twice (first after 7 days, then 14 days later), share/tools once, donate twice. New "Tips & requests" switch in the gear menu, popup and Settings (`tipsEnabled`), and a "Don't show these cards" link on every card.
+- **Fewer pop-up cards** (v1.5.2): at most one card a week; the rating card is asked at most twice (first after 7 days, then 14 days later), share/tools once, donate twice (30 days apart). New "Tips & requests" switch in the gear menu, popup and Settings (`tipsEnabled`), and a "Don't show these cards" link on every card.
 - **"Now available" card** (v1.5.1) — a small card on the right of claude.ai pointing to ChatGPT Usage Meter and Gemini Usage Meter (logo + Install each). Existing users see it after the update; new installs only after 2 days. × hides it for good; clicking Install hides that row. Key: `meters_promo_closed` / `meters_promo_clicked` in storage.local.
 - **Session % on the toolbar icon** (v1.5.0) — the extension icon shows your current session usage ("34", "MAX" at 100%), coloured green/amber/orange/red. Turn off with "Session % on the icon" in the gear menu, popup or Settings.
 - **Usage bars** (v1.4.8, optional) — a thin 2px line under each meter's label that fills with usage; takes no extra room in the strip. On by default; turn off "Usage bars" in the gear menu or popup to hide it.
 - **Extra usage** (v1.4.7) — for accounts with extra usage / overage credits switched on (Team, Enterprise, Max), an "Extra $12.40 / $50" segment in the strip, an "E" chip in the collapsed view, and a card in the popup showing spend against the monthly limit. Hidden on accounts without it.
 - **Threshold notifications** — desktop alerts (switch them off any time with "Desktop notifications" in the strip's gear menu, the popup, or Settings) when usage crosses percentages you configure (extra usage alerts use the weekly thresholds, when a monthly limit is set).
 - **Auto-scroll** — optionally keeps the chat pinned to the bottom while Claude is replying, so the latest text stays in view. Only engages when you're already near the bottom, so scrolling up to read history is never interrupted. Toggle it in **Settings → Reading experience** (on by default).
+
+## Several accounts: normal window + incognito / private / containers (v1.5.4)
+
+State is stored **per Claude account**, in the single `chrome.storage.local`, under the account's org id (`org:<orgId>:usage_state`, `…:usage_history`, `…:last_fired_thresholds`, `…:session_lock`, `…:forecast_notified`, `…:usage_raw`). It does not matter which window you are in: the same account seen from a normal window and from an incognito window reads and updates the same entry, and two different accounts never share one. Hopping A -> B -> A therefore keeps A's history, fired notification thresholds and lockout. Which account a window is on is read from its `lastActiveOrg` cookie, in that window's own cookie store. Pre-1.5.4 data is migrated under its org the first time that org is seen.
+
+Window-level facts (last error, org-discovery cache, current model) are kept per window; settings, the notify-error flag and the Free-plan SSE snapshots (already keyed by org) are shared.
+
+The background worker can only send the normal window's cookies, so for any other window the `/api/...` requests are performed by a claude.ai tab living in that window (`proxy-fetch` message handled in `content-script.js`). A private window therefore needs at least one open claude.ai tab to be polled, and the extension has to be allowed in private windows (Chrome: *Allow in Incognito*; Firefox: *Run in Private Windows*). No `"incognito": "split"` is used, so it works the same in Chrome, Edge and Firefox. Toolbar badge: normal window = global badge, other windows = tab-specific badges.
 
 ## Install
 
